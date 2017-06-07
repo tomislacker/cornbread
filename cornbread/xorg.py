@@ -98,11 +98,21 @@ class FocusedWindow(object):
                 "exe": get_exe_by_pid(self.pid),
             })
         finally:
+            self._update_queue.put(self.get(skip_lock=True))
             self.__lock.release()
 
-    def to_json(self):
-        return json.dumps({
+    def __eq__(self, other):
+        try:
+            return self.to_dict() == other.to_dict()
+        except AttributeError:
+            return False
+
+    def to_dict(self):
+        return {
             k: v
             for k, v in self.get().__dict__.items()
             if k[0] != '_'
-        }, indent=4, sort_keys=True)
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict(), indent=4, sort_keys=True)
