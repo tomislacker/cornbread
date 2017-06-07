@@ -13,6 +13,15 @@ import Xlib.display
 from copy import copy
 from subprocess import Popen, PIPE
 
+from .util import get_exe_by_pid
+
+
+def _get_command_output(command):
+    with Popen(command.split(' '), stdout=PIPE) as p:
+        output, err = p.communicate()
+    return output.decode('utf-8').strip()
+
+
 def FocusedWindowWatcher(focused_window):
     log = logging.getLogger(".".join([__name__, "FocusedWindowWatcher"]))
 
@@ -59,6 +68,11 @@ def FocusedWindowWatcher(focused_window):
 
 
 class FocusedWindow(object):
+    @staticmethod
+    def get_window_pid_by_id(window_id):
+        return _get_command_output(
+            "xdotool getwindowpid {}".format(window_id))
+
     def __init__(self):
         self._log = logging.getLogger(".".join([__name__, "FocusedWindow"]))
         self._exit_watch = False
@@ -77,9 +91,14 @@ class FocusedWindow(object):
         self.__lock.acquire()
         try:
             self.__dict__.update(args)
+            self.__dict__.update({
+                "pid": self.get_window_pid_by_id(self.window_id),
+            })
+            self.__dict__.update({
+                "exe": get_exe_by_pid(self.pid),
+            })
         finally:
             self.__lock.release()
-        self._log.warning(self.to_json())
 
     def to_json(self):
         return json.dumps({
