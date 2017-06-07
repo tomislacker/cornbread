@@ -13,3 +13,7 @@ xlib   : venv
 		--depth 1 \
 		https://github.com/python-xlib/python-xlib.git $@
 	cd $@ && $(VENV_RPATH)/bin/python setup.py install
+
+.PHONY : clean
+clean  :
+	rm -fr xlib/
