@@ -78,13 +78,16 @@ class FocusedWindow(object):
         self._exit_watch = False
         self.__lock = threading.Lock()
 
-    def get(self):
+    def get(self, skip_lock=False):
         self._log.debug("Returning copy")
-        self.__lock.acquire()
+        if not skip_lock:
+            self.__lock.acquire()
+
         try:
             return copy(self)
         finally:
-            self.__lock.release()
+            if not skip_lock:
+                self.__lock.release()
 
     def update(self, args):
         self._log.debug("Updating")
