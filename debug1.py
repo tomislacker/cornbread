@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
     try:
         logging.warning('Joining FW thread')
-        t.join(4)
+        t.join()
 
     except KeyboardInterrupt as e:
         logging.warning('Keyboard interrupt')
