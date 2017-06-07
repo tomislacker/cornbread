@@ -5,67 +5,85 @@ xorg
 This module contains commands used for querying information from Xorg
 """
 import json
+import logging
 import os
+import threading
+import Xlib
+import Xlib.display
+from copy import copy
 from subprocess import Popen, PIPE
 
-def _get_command_output(command):
-    with Popen(command.split(' '), stdout=PIPE) as p:
-        output, err = p.communicate()
-    return output.decode('utf-8').strip()
+def FocusedWindowWatcher(focused_window):
+    log = logging.getLogger(".".join([__name__, "FocusedWindowWatcher"]))
+
+    log.debug("Fetching display")
+    disp = Xlib.display.Display()
+
+    log.debug("Fetching display.screen().root")
+    root = disp.screen().root
+
+    net_wm_name = disp.intern_atom('_NET_WM_NAME')
+    net_active_window = disp.intern_atom('_NET_ACTIVE_WINDOW')
+
+    log.debug("Setting change mask")
+    root.change_attributes(event_mask=Xlib.X.FocusChangeMask)
+
+    log.debug("Entering event loop")
+    while True:
+        try:
+            args = {}
+
+            # Fetch the focused window ID
+            args.update({
+                'window_id': root.get_full_property(net_active_window, Xlib.X.AnyPropertyType).value[0],
+            })
+
+            # Fetch the window resource
+            window = window = disp.create_resource_object('window', args['window_id'])
+
+            window.change_attributes(event_mask=Xlib.X.PropertyChangeMask)
+            args.update({
+                'window_name': window.get_full_property(net_wm_name, 0).value.decode('utf-8'),
+            })
+
+        except Xlib.error.XError:
+            args.update({
+                'window_name': None,
+            })
+
+        focused_window.update(args)
+        event = disp.next_event()
+
+        if focused_window._exit_watch == True:
+            break
 
 
 class FocusedWindow(object):
-    @classmethod
-    def get(cls):
-        return cls()
-
-    @staticmethod
-    def _get_focused_window_name():
-        return _get_command_output("xdotool getwindowfocus getwindowname")
-
-    @staticmethod
-    def _get_focused_window_id():
-        return _get_command_output("xdotool getactivewindow")
-
-    @staticmethod
-    def _get_window_pid(window_id):
-        return _get_command_output(
-            "xdotool getwindowpid {}".format(window_id))
-
-    @staticmethod
-    def _get_focused_window_pid():
-        return get_window_pid(get_focused_window_id())
-
-    @staticmethod
-    def _get_focused_window_exe():
-        return get_pid_exe(get_focused_window_pid())
-
-    @staticmethod
-    def _get_pid_exe(pid):
-        return os.readlink("/proc/{}/exe".format(pid))
-
     def __init__(self):
-        self.window_name = self._get_focused_window_name()
-        self.window_id = self._get_focused_window_id()
-        self.window_pid = self._get_window_pid(self.window_id)
-        self.window_exe = self._get_pid_exe(self.window_pid)
+        self._log = logging.getLogger(".".join([__name__, "FocusedWindow"]))
+        self._exit_watch = False
+        self.__lock = threading.Lock()
 
-    def to_json(self, **args):
-        base_args = {
-            'indent': 4,
-            'sort_keys': True,
-        }
-        base_args.update(args)
+    def get(self):
+        self._log.debug("Returning copy")
+        self.__lock.acquire()
+        try:
+            return copy(self)
+        finally:
+            self.__lock.release()
 
-        return json.dumps(
-            {
-                v: getattr(self, v)
-                for v in [
-                    'window_name',
-                    'window_id',
-                    'window_pid',
-                    'window_exe'
-                ]
-            },
-            **base_args
-        )
+    def update(self, args):
+        self._log.debug("Updating")
+        self.__lock.acquire()
+        try:
+            self.__dict__.update(args)
+        finally:
+            self.__lock.release()
+        self._log.warning(self.to_json())
+
+    def to_json(self):
+        return json.dumps({
+            k: v
+            for k, v in self.get().__dict__.items()
+            if k[0] != '_'
+        }, indent=4, sort_keys=True)
