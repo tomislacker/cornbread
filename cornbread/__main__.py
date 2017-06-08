@@ -6,7 +6,9 @@ Usage:
     cornbread process [options]
 
 Options:
+    -h, --help          See this dialogue
     -l, --log-level=L   Logging module level [default: debug]
+    -v, --version       See program version
 """
 import logging
 import time
@@ -14,6 +16,7 @@ from queue import Queue
 from threading import Condition
 from threading import Thread
 
+from . import __version__
 from .xorg import FocusedWindow
 from .xorg import FocusedWindowWatcher
 
@@ -125,7 +128,7 @@ def daemon():
 
 if __name__ == '__main__':
     from docopt import docopt
-    args = docopt(__doc__)
+    args = docopt(__doc__, version=__version__)
 
     logging.basicConfig(**{
         "level": getattr(logging, args['--log-level'].upper()),

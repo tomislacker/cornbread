@@ -1,0 +1,3 @@
+include versioneer.py
+include src/cornbread/_version.py
+include cornbread/_version.py
