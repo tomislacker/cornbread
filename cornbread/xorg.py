@@ -22,7 +22,7 @@ def _get_command_output(command):
     return output.decode('utf-8').strip()
 
 
-def FocusedWindowWatcher(focused_window):
+def FocusedWindowWatcher(focused_window, update_queue):
     log = logging.getLogger(".".join([__name__, "FocusedWindowWatcher"]))
 
     log.debug("Fetching display")
@@ -73,10 +73,11 @@ class FocusedWindow(object):
         return _get_command_output(
             "xdotool getwindowpid {}".format(window_id))
 
-    def __init__(self):
+    def __init__(self, update_queue):
         self._log = logging.getLogger(".".join([__name__, "FocusedWindow"]))
         self._exit_watch = False
         self.__lock = threading.Lock()
+        self._update_queue = update_queue
 
     def get(self, skip_lock=False):
         self._log.debug("Returning copy")
@@ -118,4 +119,4 @@ class FocusedWindow(object):
         }
 
     def to_json(self):
-        return json.dumps(self.to_dict(), indent=4, sort_keys=True)
+        return json.dumps(self.to_dict())
