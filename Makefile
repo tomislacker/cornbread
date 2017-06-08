@@ -14,6 +14,10 @@ xlib   : venv
 		https://github.com/python-xlib/python-xlib.git $@
 	cd $@ && $(VENV_RPATH)/bin/python setup.py install
 
+.PHONY  : version
+version :
+	@$(VENV_PATH)/bin/python -m cornbread.__main__ --version
+
 .PHONY : clean
 clean  :
 	rm -fr xlib/
