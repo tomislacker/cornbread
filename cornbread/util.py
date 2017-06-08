@@ -8,4 +8,7 @@ import os
 
 
 def get_exe_by_pid(pid):
-    return os.readlink(os.path.join("/proc", str(pid), "exe"))
+    if pid:
+        return os.readlink(os.path.join("/proc", str(pid), "exe"))
+    else:
+        return None
