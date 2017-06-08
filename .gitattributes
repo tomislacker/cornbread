@@ -1,0 +1,2 @@
+src/cornbread/_version.py export-subst
+cornbread/_version.py export-subst
