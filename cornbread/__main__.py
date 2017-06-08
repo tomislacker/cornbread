@@ -126,9 +126,10 @@ def daemon():
         focus_buffer_writer.join(5)
 
 
-if __name__ == '__main__':
+def main(argv):
+    print(argv)
     from docopt import docopt
-    args = docopt(__doc__, version=__version__)
+    args = docopt(__doc__, version=__version__, argv=argv)
 
     logging.basicConfig(**{
         "level": getattr(logging, args['--log-level'].upper()),
@@ -143,3 +144,12 @@ if __name__ == '__main__':
 
     elif args['process']:
         raise NotImplementedError
+
+
+def entrypoint():
+    import sys
+    real_main(sys.argv)
+
+
+if __name__ == '__main__':
+    main
